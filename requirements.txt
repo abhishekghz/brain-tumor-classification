@@ -1,0 +1,14 @@
+tensorflow==2.13.0
+keras==2.13.1
+numpy
+opencv-python
+matplotlib
+scikit-learn
+seaborn
+pandas
+tqdm
+transformers
+torch
+fastapi
+uvicorn
+pillow

@@ -43,3 +43,4 @@ models/*.pth
 models/*.h5
 data/
 results/
+models/*.keras
