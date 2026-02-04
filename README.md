@@ -223,94 +223,6 @@ CLASS_NAMES = ["glioma", "meningioma", "notumor", "pituitary"]
    - Width/height shift
    - Zoom
 
-## Results
-
-### Training Progress
-- Epoch 1: Train Acc: 72.75%, Val Acc: 87.41%
-- Epoch 2: Train Acc: 90.35%, Val Acc: Improving
-- ...
-- Final: Train Acc: 94.49%, Val Acc: 93.21%
-
-### Model Outputs
-- `models/best_model.keras` - Trained model weights
-- `results/confusion_matrix.png` - Confusion matrix visualization
-- `results/classification_report.txt` - Detailed metrics per class
-- `results/accuracy_loss.png` - Training curves
-
-## Features
-
-✅ **Transfer Learning** - Pre-trained ResNet50 for faster convergence
-✅ **High Accuracy** - 93.21% validation accuracy on test set
-✅ **Production Ready** - FastAPI deployment with REST API
-✅ **Error Handling** - Robust inference with input validation
-✅ **Explainability** - Grad-CAM support for model interpretability
-✅ **Easy to Use** - Simple CLI and API interfaces
-✅ **Well Documented** - Comprehensive README and code comments
-
-## Dependencies
-
-Core dependencies (see `requirements.txt` for complete list):
-- TensorFlow 2.13.0
-- Keras 2.13.1
-- OpenCV (cv2)
-- NumPy
-- scikit-learn
-- FastAPI
-- Uvicorn
-- Matplotlib
-- Seaborn
-
-## Troubleshooting
-
-### Issue: `ModuleNotFoundError: No module named 'src'`
-**Solution**: Run scripts from project root directory:
-```bash
-cd brain-tumor-classification
-python deployment/inference.py
-```
-
-### Issue: `FileNotFoundError: best_model.keras not found`
-**Solution**: Train the model first:
-```bash
-python main.py
-```
-
-### Issue: GPU not detected
-**Solution**: Install TensorFlow GPU version:
-```bash
-pip install tensorflow[and-cuda]
-```
-
-### Issue: Memory error during training
-**Solution**: Reduce batch size in `src/config.py`:
-```python
-BATCH_SIZE = 16  # Reduce from 32
-```
-
-## Model Download
-
-The trained model (`best_model.keras`) is generated during training and is ~100MB in size. It's excluded from the repository due to GitHub's file size limits. To get the model:
-
-1. Train locally: `python main.py` (takes ~30 minutes on GPU)
-2. Or download from: [Training instructions](README.md#training-the-model)
-
-## Contributing
-
-Contributions are welcome! Areas for improvement:
-- Support for other tumor types
-- Ensemble models
-- Mobile deployment
-- Real-time inference optimization
-
-## License
-
-This project is open source and available under the MIT License.
-
-## Author
-
-**Abhishek Gautam**
-- GitHub: [@abhishekghz](https://github.com/abhishekghz)
-- Email: gautam.abhishek7100@gmail.com
 
 ## Citation
 
@@ -323,12 +235,6 @@ If you use this project in your research, please cite:
   url = {https://github.com/abhishekghz/brain-tumor-classification}
 }
 ```
-
-## Acknowledgments
-
-- TensorFlow/Keras team for excellent deep learning framework
-- Dataset providers: Figshare, SARTAJ, BR35H
-- ResNet50 authors: He et al., 2015
 
 ## Contact
 
