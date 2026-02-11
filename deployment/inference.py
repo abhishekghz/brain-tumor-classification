@@ -10,7 +10,19 @@ import keras
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__).replace('/deployment', '')))
 from src.config import *
 
-model = keras.models.load_model(os.path.join(MODEL_DIR, "best_model.keras"))
+# Lazy load model - only load when first needed
+_model = None
+
+def _get_model():
+    """Load model lazily on first use."""
+    global _model
+    if _model is None:
+        try:
+            _model = keras.models.load_model(os.path.join(MODEL_DIR, "best_model.keras"))
+        except Exception as e:
+            print(f"Error loading model: {e}")
+            raise
+    return _model
 
 
 def _preprocess_image(img):
@@ -37,6 +49,7 @@ def _preprocess_image(img):
 
 
 def _predict_preprocessed(img):
+    model = _get_model()
     preds = model.predict(img)
     class_id = int(np.argmax(preds))
     confidence = float(np.max(preds))
