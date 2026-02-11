@@ -2,13 +2,28 @@ import cv2
 import numpy as np
 import os
 import sys
-from tensorflow.keras.models import load_model
+
+import keras
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__).replace('/deployment', '')))
 from src.config import *
 
-model = load_model(os.path.join(MODEL_DIR, "best_model.keras"))
+model = keras.models.load_model(os.path.join(MODEL_DIR, "best_model.keras"))
+
+
+def _preprocess_image(img):
+    img = cv2.resize(img, (IMG_SIZE, IMG_SIZE))
+    img = img / 255.0
+    img = np.expand_dims(img, axis=0)
+    return img
+
+
+def _predict_preprocessed(img):
+    preds = model.predict(img)
+    class_id = int(np.argmax(preds))
+    confidence = float(np.max(preds))
+    return CLASS_NAMES[class_id], confidence
 
 def predict_image(img_path):
     if not os.path.exists(img_path):
@@ -20,15 +35,23 @@ def predict_image(img_path):
         print(f"Error: Could not load image from '{img_path}'")
         return None, None
     
-    img = cv2.resize(img, (IMG_SIZE, IMG_SIZE))
-    img = img / 255.0
-    img = np.expand_dims(img, axis=0)
+    img = _preprocess_image(img)
+    return _predict_preprocessed(img)
 
-    preds = model.predict(img)
-    class_id = np.argmax(preds)
-    confidence = float(np.max(preds))
 
-    return CLASS_NAMES[class_id], confidence
+def predict_image_bytes(img_bytes):
+    if not img_bytes:
+        print("Error: Empty image payload.")
+        return None, None
+
+    npimg = np.frombuffer(img_bytes, np.uint8)
+    img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
+    if img is None:
+        print("Error: Could not decode image from bytes")
+        return None, None
+
+    img = _preprocess_image(img)
+    return _predict_preprocessed(img)
 
 if __name__ == "__main__":
     # Example usage with a test image from the data directory

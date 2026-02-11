@@ -5,6 +5,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 MODEL_DIR = os.path.join(BASE_DIR, "models")
 RESULTS_DIR = os.path.join(BASE_DIR, "results")
+UPLOADS_DIR = os.path.join(DATA_DIR, "Uploads")
+UNLABELED_DIR = os.path.join(UPLOADS_DIR, "unlabeled")
+LABELED_DIR = os.path.join(UPLOADS_DIR, "labeled")
 
 # Image parameters
 IMG_SIZE = 224
@@ -23,3 +26,5 @@ MODEL_NAME = "google/vit-base-patch16-224"
 
 os.makedirs(MODEL_DIR, exist_ok=True)
 os.makedirs(RESULTS_DIR, exist_ok=True)
+os.makedirs(UNLABELED_DIR, exist_ok=True)
+os.makedirs(LABELED_DIR, exist_ok=True)
