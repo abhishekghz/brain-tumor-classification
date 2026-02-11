@@ -44,3 +44,13 @@ models/*.h5
 data/
 results/
 models/*.keras
+.streamlit/
+# Streamlit deployment config
+*.pyc
+__pycache__/
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
