@@ -3,6 +3,7 @@ import os
 import sys
 from PIL import Image
 from io import BytesIO
+import urllib.request
 
 import keras
 
@@ -13,12 +14,40 @@ from src.config import *
 # Lazy load model - only load when first needed
 _model = None
 
+# Cloud model URL for Streamlit Cloud deployment
+MODEL_CLOUD_URL = "https://huggingface.co/abhishekghz/brain-tumor-classifier/resolve/main/best_model.keras"
+LOCAL_MODEL_PATH = os.path.join(MODEL_DIR, "best_model.keras")
+
+def _download_model(url, save_path):
+    """Download model from cloud source."""
+    import ssl
+    ssl._create_default_https_context = ssl._create_unverified_context
+    
+    print(f"Downloading model from cloud: {url}")
+    try:
+        urllib.request.urlretrieve(url, save_path)
+        print(f"Model downloaded successfully")
+        return True
+    except Exception as e:
+        print(f"Failed to download model: {e}")
+        return False
+
 def _get_model():
     """Load model lazily on first use."""
     global _model
     if _model is None:
         try:
-            _model = keras.models.load_model(os.path.join(MODEL_DIR, "best_model.keras"))
+            # Try loading from local path first
+            if os.path.exists(LOCAL_MODEL_PATH):
+                print(f"Loading model from local path")
+                _model = keras.models.load_model(LOCAL_MODEL_PATH)
+            else:
+                # Download from cloud if local doesn't exist (for Streamlit Cloud)
+                print("Local model not found. Downloading from cloud...")
+                if _download_model(MODEL_CLOUD_URL, LOCAL_MODEL_PATH):
+                    _model = keras.models.load_model(LOCAL_MODEL_PATH)
+                else:
+                    raise RuntimeError("Could not load model")
         except Exception as e:
             print(f"Error loading model: {e}")
             raise
