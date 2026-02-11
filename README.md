@@ -9,6 +9,16 @@ This project provides an end-to-end solution for brain tumor classification:
 - **Deployment**: FastAPI REST API for inference
 - **Framework**: TensorFlow 2.13, Keras
 
+## 🚀 Live Demo
+
+**Try the app now:** [https://brain-tumor-classification-7100.streamlit.app](https://brain-tumor-classification-7100.streamlit.app)
+
+Features:
+- Upload MRI images and get instant predictions
+- Admin panel for labeling new data
+- Continual learning: Model improves with new labeled data
+- Medical-friendly interface for healthcare professionals
+
 ## Dataset
 
 
