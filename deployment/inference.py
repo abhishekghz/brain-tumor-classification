@@ -61,11 +61,11 @@ def predict_image_bytes(img_bytes):
     if not img_bytes:
         print("Error: Empty image payload.")
         return None, None
-try:
+    
+    try:
         img = Image.open(BytesIO(img_bytes)).convert('RGB')
     except Exception as e:
-        print(f"Error: Could not decode image from bytes: {e}
-        print("Error: Could not decode image from bytes")
+        print(f"Error: Could not decode image from bytes: {e}")
         return None, None
 
     img = _preprocess_image(img)
