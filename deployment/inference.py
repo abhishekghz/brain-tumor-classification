@@ -1,7 +1,8 @@
-import cv2
 import numpy as np
 import os
 import sys
+from PIL import Image
+from io import BytesIO
 
 import keras
 
@@ -13,10 +14,26 @@ model = keras.models.load_model(os.path.join(MODEL_DIR, "best_model.keras"))
 
 
 def _preprocess_image(img):
-    img = cv2.resize(img, (IMG_SIZE, IMG_SIZE))
-    img = img / 255.0
-    img = np.expand_dims(img, axis=0)
-    return img
+    """Resize PIL Image to IMG_SIZE and normalize."""
+    if isinstance(img, Image.Image):
+        img = img.resize((IMG_SIZE, IMG_SIZE), Image.Resampling.LANCZOS)
+        img_array = np.array(img)
+    else:
+        # If it's a numpy array from file reading
+        img = Image.fromarray(img)
+        img = img.resize((IMG_SIZE, IMG_SIZE), Image.Resampling.LANCZOS)
+        img_array = np.array(img)
+    
+    # Convert to RGB if grayscale
+    if len(img_array.shape) == 2:
+        img_array = np.stack([img_array] * 3, axis=-1)
+    elif img_array.shape[2] == 4:
+        # Remove alpha channel if present
+        img_array = img_array[:, :, :3]
+    
+    img_array = img_array / 255.0
+    img_array = np.expand_dims(img_array, axis=0)
+    return img_array
 
 
 def _predict_preprocessed(img):
@@ -30,9 +47,10 @@ def predict_image(img_path):
         print(f"Error: Image file '{img_path}' not found.")
         return None, None
     
-    img = cv2.imread(img_path)
-    if img is None:
-        print(f"Error: Could not load image from '{img_path}'")
+    try:
+        img = Image.open(img_path).convert('RGB')
+    except Exception as e:
+        print(f"Error: Could not load image from '{img_path}': {e}")
         return None, None
     
     img = _preprocess_image(img)
@@ -43,10 +61,10 @@ def predict_image_bytes(img_bytes):
     if not img_bytes:
         print("Error: Empty image payload.")
         return None, None
-
-    npimg = np.frombuffer(img_bytes, np.uint8)
-    img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
-    if img is None:
+try:
+        img = Image.open(BytesIO(img_bytes)).convert('RGB')
+    except Exception as e:
+        print(f"Error: Could not decode image from bytes: {e}
         print("Error: Could not decode image from bytes")
         return None, None
 
