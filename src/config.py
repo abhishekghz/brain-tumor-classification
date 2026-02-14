@@ -12,7 +12,7 @@ LABELED_DIR = os.path.join(UPLOADS_DIR, "labeled")
 # Image parameters
 IMG_SIZE = 224
 BATCH_SIZE = 16
-EPOCHS = 5
+EPOCHS = 15
 NUM_CLASSES = 4
 
 # Classes
@@ -22,7 +22,18 @@ CLASS_NAMES = ["glioma", "meningioma", "notumor", "pituitary"]
 LEARNING_RATE = 1e-4
 
 # Model
-MODEL_NAME = "google/vit-base-patch16-224"
+SUPPORTED_MODELS = ["vit", "resnet"]
+MODEL_TYPE = "vit"
+MODEL_FILENAME = "best_model.pth"
+PRETRAINED = True
+
+# ViT configuration
+VIT_PATCH_SIZE = 16
+VIT_PROJECTION_DIM = 128
+VIT_NUM_HEADS = 4
+VIT_TRANSFORMER_LAYERS = 6
+VIT_MLP_DIM = 256
+VIT_DROPOUT = 0.2
 
 os.makedirs(MODEL_DIR, exist_ok=True)
 os.makedirs(RESULTS_DIR, exist_ok=True)

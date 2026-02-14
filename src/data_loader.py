@@ -1,26 +1,32 @@
-import tensorflow as tf
-from tensorflow.keras.preprocessing import image_dataset_from_directory
+import os
+from torch.utils.data import DataLoader
+from torchvision.datasets import ImageFolder
+from src.model import get_transforms
 from src.config import *
 
 def load_data():
-    train_ds = image_dataset_from_directory(
+    train_dataset = ImageFolder(
         os.path.join(DATA_DIR, "Training"),
-        image_size=(IMG_SIZE, IMG_SIZE),
-        batch_size=BATCH_SIZE,
-        label_mode="categorical",
-        shuffle=True
+        transform=get_transforms(MODEL_TYPE, train=True),
     )
-
-    val_ds = image_dataset_from_directory(
+    val_dataset = ImageFolder(
         os.path.join(DATA_DIR, "Testing"),
-        image_size=(IMG_SIZE, IMG_SIZE),
-        batch_size=BATCH_SIZE,
-        label_mode="categorical",
-        shuffle=False
+        transform=get_transforms(MODEL_TYPE, train=False),
     )
 
-    AUTOTUNE = tf.data.AUTOTUNE
-    train_ds = train_ds.prefetch(AUTOTUNE)
-    val_ds = val_ds.prefetch(AUTOTUNE)
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=BATCH_SIZE,
+        shuffle=True,
+        num_workers=2,
+        pin_memory=True,
+    )
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=BATCH_SIZE,
+        shuffle=False,
+        num_workers=2,
+        pin_memory=True,
+    )
 
-    return train_ds, val_ds
+    return train_loader, val_loader

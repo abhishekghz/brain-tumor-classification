@@ -1,22 +1,25 @@
 import numpy as np
 import os
 import sys
+import torch
 from PIL import Image
 from io import BytesIO
 import urllib.request
 
-import keras
-
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__).replace('/deployment', '')))
 from src.config import *
+from src.model import get_torch_device, get_transforms, load_checkpoint
 
 # Lazy load model - only load when first needed
 _model = None
+_model_type = None
+_device = get_torch_device()
+_transform = None
 
 # Cloud model URL for Streamlit Cloud deployment
-MODEL_CLOUD_URL = "https://huggingface.co/abhishekghz/brain-tumor-classifier/resolve/main/best_model.keras"
-LOCAL_MODEL_PATH = os.path.join(MODEL_DIR, "best_model.keras")
+MODEL_CLOUD_URL = "https://huggingface.co/abhishekghz/brain-tumor-classifier/resolve/main/best_model.pth"
+LOCAL_MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILENAME)
 
 def _download_model(url, save_path):
     """Download model from cloud source."""
@@ -34,20 +37,23 @@ def _download_model(url, save_path):
 
 def _get_model():
     """Load model lazily on first use."""
-    global _model
+    global _model, _model_type, _transform
     if _model is None:
         try:
             # Try loading from local path first
             if os.path.exists(LOCAL_MODEL_PATH):
                 print(f"Loading model from local path")
-                _model = keras.models.load_model(LOCAL_MODEL_PATH)
+                _model, _model_type = load_checkpoint(LOCAL_MODEL_PATH, map_location=_device)
             else:
                 # Download from cloud if local doesn't exist (for Streamlit Cloud)
                 print("Local model not found. Downloading from cloud...")
                 if _download_model(MODEL_CLOUD_URL, LOCAL_MODEL_PATH):
-                    _model = keras.models.load_model(LOCAL_MODEL_PATH)
+                    _model, _model_type = load_checkpoint(LOCAL_MODEL_PATH, map_location=_device)
                 else:
                     raise RuntimeError("Could not load model")
+            _model = _model.to(_device)
+            _model.eval()
+            _transform = get_transforms(_model_type, train=False)
         except Exception as e:
             print(f"Error loading model: {e}")
             raise
@@ -72,16 +78,21 @@ def _preprocess_image(img):
         # Remove alpha channel if present
         img_array = img_array[:, :, :3]
     
-    img_array = img_array / 255.0
-    img_array = np.expand_dims(img_array, axis=0)
-    return img_array
+    img = Image.fromarray(img_array)
+    _get_model()
+    tensor = _transform(img).unsqueeze(0)
+    return tensor
 
 
 def _predict_preprocessed(img):
     model = _get_model()
-    preds = model.predict(img)
-    class_id = int(np.argmax(preds))
-    confidence = float(np.max(preds))
+    img = img.to(_device)
+    with torch.no_grad():
+        logits = model(img)
+        probs = torch.softmax(logits, dim=1)
+        confidence, class_id = torch.max(probs, dim=1)
+    class_id = int(class_id.item())
+    confidence = float(confidence.item())
     return CLASS_NAMES[class_id], confidence
 
 def predict_image(img_path):

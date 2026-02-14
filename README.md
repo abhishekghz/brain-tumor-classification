@@ -1,13 +1,13 @@
 # Brain Tumor Classification using Deep Learning
 
-A deep learning framework for multi-class brain tumor classification from MRI images using ResNet50 architecture with high accuracy and easy-to-use deployment API.
+A deep learning framework for multi-class brain tumor classification from MRI images with both a Vision Transformer (ViT) and ResNet50 baseline for research-grade comparison and deployment.
 
 ## Overview
 
 This project provides an end-to-end solution for brain tumor classification:
 - **Classes**: Glioma, Meningioma, Pituitary, No Tumor (4-class classification)
 - **Deployment**: FastAPI REST API for inference
-- **Framework**: TensorFlow 2.13, Keras
+- **Framework**: PyTorch
 
 ## 🚀 Live Demo
 
@@ -54,15 +54,24 @@ pip install -r requirements.txt
 
 ## Model Architecture
 
-**ResNet50** (Residual Network with 50 layers)
+You can switch architecture from [src/config.py](src/config.py):
+- `MODEL_TYPE = "vit"` for Vision Transformer
+- `MODEL_TYPE = "resnet"` for ResNet50 baseline
+
+### Vision Transformer (ViT)
+- Patch embedding using `Conv2D` patch projection
+- Learned positional embedding
+- Multi-head self-attention encoder blocks
+- MLP head + softmax classifier
+
+### ResNet50 Baseline
 - Pre-trained on ImageNet
-- Transfer learning approach
-- Fine-tuned for brain tumor classification
-- Frozen base layers + custom classification head:
-  - Global Average Pooling 2D
-  - Dense layer (512 units, ReLU activation)
-  - Dropout (0.4)
-  - Output layer (4 units, Softmax activation)
+- Frozen feature extractor + custom classification head
+
+### Run comparison for paper
+1. Set `MODEL_TYPE = "resnet"` in [src/config.py](src/config.py), then run training/evaluation.
+2. Set `MODEL_TYPE = "vit"` in [src/config.py](src/config.py), then run training/evaluation.
+3. Compare metrics from [results/classification_report.txt](results/classification_report.txt) and [results/confusion_matrix.png](results/confusion_matrix.png).
 
 
 

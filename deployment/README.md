@@ -1,6 +1,6 @@
 # Brain Tumor MRI Classifier - Streamlit App
 
-This Streamlit app provides a web interface for brain tumor classification from MRI images using a ResNet50 deep learning model.
+This Streamlit app provides a web interface for brain tumor classification from MRI images using the trained model artifact (ViT or ResNet50).
 
 ## Features
 
@@ -39,10 +39,8 @@ streamlit run deployment/gui_app.py
 
 ## Model
 
-The app uses a ResNet50 model trained on brain MRI images to classify four tumor types:
+The app uses the model saved at `models/best_model.pth` (selected during training via `MODEL_TYPE` in [src/config.py](../src/config.py)) to classify four tumor types:
 - Glioma
 - Meningioma
 - Pituitary tumor
 - No tumor
-
-Accuracy: ~93% on validation data

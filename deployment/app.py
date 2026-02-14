@@ -1,26 +1,16 @@
 from fastapi import FastAPI, UploadFile, File
-import numpy as np
-import cv2
-from tensorflow.keras.models import load_model
-from src.config import *
-import os
+from deployment.inference import predict_image_bytes
 
 app = FastAPI()
-model = load_model(os.path.join(MODEL_DIR, "best_model.keras"))
 
 @app.post("/predict/")
 async def predict(file: UploadFile = File(...)):
     contents = await file.read()
-    npimg = np.frombuffer(contents, np.uint8)
-    img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
-    img = cv2.resize(img, (IMG_SIZE, IMG_SIZE)) / 255.0
-    img = np.expand_dims(img, axis=0)
-
-    preds = model.predict(img)
-    class_id = int(np.argmax(preds))
-    confidence = float(np.max(preds))
+    label, confidence = predict_image_bytes(contents)
+    if label is None:
+        return {"prediction": None, "confidence": 0.0, "error": "Invalid image or model unavailable"}
 
     return {
-        "prediction": CLASS_NAMES[class_id],
+        "prediction": label,
         "confidence": confidence
     }

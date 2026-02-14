@@ -1,36 +1,57 @@
-import tensorflow as tf
 import cv2
 import numpy as np
-from tensorflow.keras.models import load_model
+import torch
+from PIL import Image
 from src.config import *
+from src.model import get_torch_device, get_transforms, load_checkpoint
 
 def generate_gradcam(img_path):
-    model = load_model(os.path.join(MODEL_DIR, "best_model.h5"))
+    device = get_torch_device()
+    model, model_type = load_checkpoint(os.path.join(MODEL_DIR, MODEL_FILENAME), map_location=device)
+    model = model.to(device)
+    model.eval()
 
-    img = cv2.imread(img_path)
-    img = cv2.resize(img, (IMG_SIZE, IMG_SIZE))
-    img = img / 255.0
-    img_tensor = np.expand_dims(img, axis=0)
+    if model_type != "resnet":
+        raise ValueError("Grad-CAM currently supports only resnet checkpoints.")
 
-    preds = model(img_tensor)
-    class_idx = tf.argmax(preds[0])
+    bgr_img = cv2.imread(img_path)
+    rgb_img = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2RGB)
+    pil_img = Image.fromarray(cv2.resize(rgb_img, (IMG_SIZE, IMG_SIZE)))
+    transform = get_transforms(model_type, train=False)
+    input_tensor = transform(pil_img).unsqueeze(0).to(device)
 
-    grad_model = tf.keras.models.Model(
-        [model.inputs], [model.output]
-    )
+    gradients = []
+    activations = []
 
-    with tf.GradientTape() as tape:
-        outputs = grad_model(img_tensor)
-        loss = outputs[:, class_idx]
+    def save_gradient(_module, grad_input, grad_output):
+        gradients.append(grad_output[0])
 
-    grads = tape.gradient(loss, img_tensor)
-    heatmap = tf.reduce_mean(grads, axis=-1)[0]
+    def save_activation(_module, _input, output):
+        activations.append(output)
 
-    heatmap = np.maximum(heatmap, 0)
-    heatmap /= heatmap.max()
+    target_layer = model.layer4[-1].conv3
+    handle_fwd = target_layer.register_forward_hook(save_activation)
+    handle_bwd = target_layer.register_full_backward_hook(save_gradient)
 
-    heatmap = cv2.resize(heatmap.numpy(), (IMG_SIZE, IMG_SIZE))
-    heatmap = cv2.applyColorMap(np.uint8(255 * heatmap), cv2.COLORMAP_JET)
+    output = model(input_tensor)
+    class_idx = int(torch.argmax(output, dim=1).item())
+    score = output[:, class_idx]
 
-    superimposed = cv2.addWeighted(heatmap, 0.4, img.astype("uint8"), 0.6, 0)
+    model.zero_grad()
+    score.backward()
+
+    grads = gradients[0]
+    acts = activations[0]
+    weights = torch.mean(grads, dim=(2, 3), keepdim=True)
+    cam = torch.sum(weights * acts, dim=1).squeeze(0)
+    cam = torch.relu(cam)
+    cam = cam / (torch.max(cam) + 1e-8)
+    cam = cam.detach().cpu().numpy()
+
+    handle_fwd.remove()
+    handle_bwd.remove()
+
+    cam = cv2.resize(cam, (IMG_SIZE, IMG_SIZE))
+    heatmap = cv2.applyColorMap(np.uint8(255 * cam), cv2.COLORMAP_JET)
+    superimposed = cv2.addWeighted(heatmap, 0.4, cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR), 0.6, 0)
     return superimposed
