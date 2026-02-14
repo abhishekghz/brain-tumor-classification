@@ -8,6 +8,11 @@ import streamlit as st
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, BASE_DIR)
 
+if st.secrets.get("model_cloud_url") and not os.getenv("MODEL_CLOUD_URL"):
+    os.environ["MODEL_CLOUD_URL"] = st.secrets.get("model_cloud_url")
+if st.secrets.get("hf_token") and not os.getenv("HF_TOKEN"):
+    os.environ["HF_TOKEN"] = st.secrets.get("hf_token")
+
 from deployment.inference import predict_image_bytes
 from src.config import CLASS_NAMES, UNLABELED_DIR, LABELED_DIR
 from src.continual_train import fine_tune_on_new_data

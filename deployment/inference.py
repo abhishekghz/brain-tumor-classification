@@ -17,8 +17,10 @@ _model_type = None
 _device = get_torch_device()
 _transform = None
 
-# Cloud model URL for Streamlit Cloud deployment
-MODEL_CLOUD_URL = "https://huggingface.co/abhishekghz/brain-tumor-classifier/resolve/main/best_model.pth"
+# Cloud model URL for Streamlit/Hugging Face deployment
+DEFAULT_MODEL_CLOUD_URL = "https://huggingface.co/abhishekghz/brain-tumor-classifier/resolve/main/best_model.pth"
+MODEL_CLOUD_URL = os.getenv("MODEL_CLOUD_URL", DEFAULT_MODEL_CLOUD_URL)
+HF_TOKEN = os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_TOKEN")
 LOCAL_MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILENAME)
 
 def _download_model(url, save_path):
@@ -28,12 +30,26 @@ def _download_model(url, save_path):
     
     print(f"Downloading model from cloud: {url}")
     try:
-        urllib.request.urlretrieve(url, save_path)
+        request = urllib.request.Request(url)
+        if HF_TOKEN:
+            request.add_header("Authorization", f"Bearer {HF_TOKEN}")
+        with urllib.request.urlopen(request) as response, open(save_path, "wb") as out_file:
+            out_file.write(response.read())
         print(f"Model downloaded successfully")
         return True
     except Exception as e:
         print(f"Failed to download model: {e}")
         return False
+
+
+def _candidate_cloud_urls():
+    candidates = [MODEL_CLOUD_URL]
+    base = "https://huggingface.co/abhishekghz/brain-tumor-classifier/resolve/main"
+    for name in ["best_model.pth", "best_model_vit.pth", "best_model_resnet.pth"]:
+        url = f"{base}/{name}"
+        if url not in candidates:
+            candidates.append(url)
+    return candidates
 
 def _get_model():
     """Load model lazily on first use."""
@@ -47,10 +63,14 @@ def _get_model():
             else:
                 # Download from cloud if local doesn't exist (for Streamlit Cloud)
                 print("Local model not found. Downloading from cloud...")
-                if _download_model(MODEL_CLOUD_URL, LOCAL_MODEL_PATH):
-                    _model, _model_type = load_checkpoint(LOCAL_MODEL_PATH, map_location=_device)
-                else:
-                    raise RuntimeError("Could not load model")
+                downloaded = False
+                for candidate_url in _candidate_cloud_urls():
+                    if _download_model(candidate_url, LOCAL_MODEL_PATH):
+                        downloaded = True
+                        break
+                if not downloaded:
+                    raise RuntimeError("Could not load model from any configured cloud URL")
+                _model, _model_type = load_checkpoint(LOCAL_MODEL_PATH, map_location=_device)
             _model = _model.to(_device)
             _model.eval()
             _transform = get_transforms(_model_type, train=False)

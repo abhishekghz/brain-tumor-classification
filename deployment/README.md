@@ -22,7 +22,12 @@ This Streamlit app provides a web interface for brain tumor classification from 
 In Streamlit Cloud settings, add a secret:
 ```toml
 admin_password = "your-secure-password"
+model_cloud_url = "https://huggingface.co/<user>/<repo>/resolve/main/best_model.pth"
+# Optional for private Hugging Face repos
+hf_token = "hf_xxx"
 ```
+
+The app first checks local `models/best_model.pth`. If not found, it downloads from `model_cloud_url`.
 
 ## Local Development
 
@@ -32,6 +37,9 @@ pip install -r requirements.txt
 
 # Set admin password
 export ADMIN_PASSWORD="your-password"
+export MODEL_CLOUD_URL="https://huggingface.co/<user>/<repo>/resolve/main/best_model.pth"
+# Optional for private repos
+export HF_TOKEN="hf_xxx"
 
 # Run the app
 streamlit run deployment/gui_app.py
