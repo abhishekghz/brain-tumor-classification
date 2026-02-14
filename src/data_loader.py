@@ -4,14 +4,14 @@ from torchvision.datasets import ImageFolder
 from src.model import get_transforms
 from src.config import *
 
-def load_data():
+def load_data(model_type=MODEL_TYPE):
     train_dataset = ImageFolder(
         os.path.join(DATA_DIR, "Training"),
-        transform=get_transforms(MODEL_TYPE, train=True),
+        transform=get_transforms(model_type, train=True),
     )
     val_dataset = ImageFolder(
         os.path.join(DATA_DIR, "Testing"),
-        transform=get_transforms(MODEL_TYPE, train=False),
+        transform=get_transforms(model_type, train=False),
     )
 
     train_loader = DataLoader(

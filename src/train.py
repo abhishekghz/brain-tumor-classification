@@ -5,10 +5,10 @@ from src.data_loader import load_data
 from src.model import build_model, get_torch_device, save_checkpoint
 from src.config import *
 
-def train():
-    train_loader, val_loader = load_data()
+def train(model_type=MODEL_TYPE, model_filename=MODEL_FILENAME, artifact_suffix=""):
+    train_loader, val_loader = load_data(model_type=model_type)
     device = get_torch_device()
-    model = build_model().to(device)
+    model = build_model(model_type=model_type).to(device)
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
@@ -67,7 +67,7 @@ def train():
         history["loss"].append(train_loss)
         history["val_loss"].append(val_loss)
 
-    save_checkpoint(model, model_type=MODEL_TYPE, path=os.path.join(MODEL_DIR, MODEL_FILENAME))
+    save_checkpoint(model, model_type=model_type, path=os.path.join(MODEL_DIR, model_filename))
 
     # Plot accuracy & loss
     plt.figure(figsize=(10,4))
@@ -84,5 +84,8 @@ def train():
     plt.title("Loss")
     plt.legend()
 
-    plt.savefig(os.path.join(RESULTS_DIR, "accuracy_loss.png"))
+    suffix = f"_{artifact_suffix}" if artifact_suffix else ""
+    plt.savefig(os.path.join(RESULTS_DIR, f"accuracy_loss{suffix}.png"))
     plt.close()
+
+    return history

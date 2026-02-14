@@ -73,6 +73,12 @@ You can switch architecture from [src/config.py](src/config.py):
 2. Set `MODEL_TYPE = "vit"` in [src/config.py](src/config.py), then run training/evaluation.
 3. Compare metrics from [results/classification_report.txt](results/classification_report.txt) and [results/confusion_matrix.png](results/confusion_matrix.png).
 
+Automated alternative:
+- Run `python run_experiments.py` to train/evaluate both models and generate:
+  - `results/model_comparison.csv`
+  - `results/model_comparison.md`
+  - per-model reports/plots (suffix `_resnet` / `_vit`)
+
 
 
 ## Citation
