@@ -18,10 +18,38 @@ _device = get_torch_device()
 _transform = None
 
 # Cloud model URL for Streamlit/Hugging Face deployment
-DEFAULT_MODEL_CLOUD_URL = "https://huggingface.co/abhishekghz/brain-tumor-classifier/resolve/main/best_model.pth"
+DEFAULT_DEPLOY_MODEL_FILENAME = "best_model_resnet.pth"
+DEPLOY_MODEL_FILENAME = os.getenv("DEPLOY_MODEL_FILENAME", DEFAULT_DEPLOY_MODEL_FILENAME)
+DEFAULT_MODEL_CLOUD_URL = f"https://huggingface.co/abhishekghz/brain-tumor-classifier/resolve/main/{DEPLOY_MODEL_FILENAME}"
 MODEL_CLOUD_URL = os.getenv("MODEL_CLOUD_URL", DEFAULT_MODEL_CLOUD_URL)
 HF_TOKEN = os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_TOKEN")
-LOCAL_MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILENAME)
+
+
+def _candidate_local_paths():
+    candidates = [
+        os.path.join(MODEL_DIR, DEPLOY_MODEL_FILENAME),
+        os.path.join(MODEL_DIR, MODEL_FILENAME),
+        os.path.join(MODEL_DIR, "best_model_resnet.pth"),
+        os.path.join(MODEL_DIR, "best_model_vit.pth"),
+        os.path.join(MODEL_DIR, "best_model.pth"),
+    ]
+    seen = set()
+    unique_paths = []
+    for path in candidates:
+        if path not in seen:
+            unique_paths.append(path)
+            seen.add(path)
+    return unique_paths
+
+
+def _resolve_local_model_path():
+    for path in _candidate_local_paths():
+        if os.path.exists(path):
+            return path
+    return _candidate_local_paths()[0]
+
+
+LOCAL_MODEL_PATH = _resolve_local_model_path()
 
 def _download_model(url, save_path):
     """Download model from cloud source."""
@@ -45,7 +73,7 @@ def _download_model(url, save_path):
 def _candidate_cloud_urls():
     candidates = [MODEL_CLOUD_URL]
     base = "https://huggingface.co/abhishekghz/brain-tumor-classifier/resolve/main"
-    for name in ["best_model.pth", "best_model_vit.pth", "best_model_resnet.pth"]:
+    for name in [DEPLOY_MODEL_FILENAME, "best_model_resnet.pth", "best_model_vit.pth", "best_model.pth"]:
         url = f"{base}/{name}"
         if url not in candidates:
             candidates.append(url)
@@ -56,21 +84,23 @@ def _get_model():
     global _model, _model_type, _transform
     if _model is None:
         try:
+            local_model_path = _resolve_local_model_path()
+
             # Try loading from local path first
-            if os.path.exists(LOCAL_MODEL_PATH):
-                print(f"Loading model from local path")
-                _model, _model_type = load_checkpoint(LOCAL_MODEL_PATH, map_location=_device)
+            if os.path.exists(local_model_path):
+                print(f"Loading model from local path: {os.path.basename(local_model_path)}")
+                _model, _model_type = load_checkpoint(local_model_path, map_location=_device)
             else:
                 # Download from cloud if local doesn't exist (for Streamlit Cloud)
                 print("Local model not found. Downloading from cloud...")
                 downloaded = False
                 for candidate_url in _candidate_cloud_urls():
-                    if _download_model(candidate_url, LOCAL_MODEL_PATH):
+                    if _download_model(candidate_url, local_model_path):
                         downloaded = True
                         break
                 if not downloaded:
                     raise RuntimeError("Could not load model from any configured cloud URL")
-                _model, _model_type = load_checkpoint(LOCAL_MODEL_PATH, map_location=_device)
+                _model, _model_type = load_checkpoint(local_model_path, map_location=_device)
             _model = _model.to(_device)
             _model.eval()
             _transform = get_transforms(_model_type, train=False)

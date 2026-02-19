@@ -22,12 +22,20 @@ This Streamlit app provides a web interface for brain tumor classification from 
 In Streamlit Cloud settings, add a secret:
 ```toml
 admin_password = "your-secure-password"
-model_cloud_url = "https://huggingface.co/<user>/<repo>/resolve/main/best_model.pth"
+deploy_model_filename = "best_model_resnet.pth"
+model_cloud_url = "https://huggingface.co/<user>/<repo>/resolve/main/best_model_resnet.pth"
 # Optional for private Hugging Face repos
 hf_token = "hf_xxx"
 ```
 
-The app first checks local `models/best_model.pth`. If not found, it downloads from `model_cloud_url`.
+The app first checks local checkpoints in this order:
+- `models/$DEPLOY_MODEL_FILENAME` (default: `best_model_resnet.pth`)
+- configured model from `src/config.py`
+- `models/best_model_resnet.pth`
+- `models/best_model_vit.pth`
+- `models/best_model.pth`
+
+If none are present locally, it downloads from `model_cloud_url`.
 
 ## Local Development
 
@@ -37,7 +45,8 @@ pip install -r requirements.txt
 
 # Set admin password
 export ADMIN_PASSWORD="your-password"
-export MODEL_CLOUD_URL="https://huggingface.co/<user>/<repo>/resolve/main/best_model.pth"
+export DEPLOY_MODEL_FILENAME="best_model_resnet.pth"
+export MODEL_CLOUD_URL="https://huggingface.co/<user>/<repo>/resolve/main/best_model_resnet.pth"
 # Optional for private repos
 export HF_TOKEN="hf_xxx"
 
@@ -47,7 +56,11 @@ streamlit run deployment/gui_app.py
 
 ## Model
 
-The app uses the model saved at `models/best_model.pth` (selected during training via `MODEL_TYPE` in [src/config.py](../src/config.py)) to classify four tumor types:
+The app uses the first available model from the local fallback list above (or downloads from cloud), and supports runtime override via `DEPLOY_MODEL_FILENAME`.
+
+Current default deployment model is `best_model_resnet.pth`.
+
+The classifier predicts four tumor types:
 - Glioma
 - Meningioma
 - Pituitary tumor
