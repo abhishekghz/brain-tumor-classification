@@ -12,7 +12,7 @@ LABELED_DIR = os.path.join(UPLOADS_DIR, "labeled")
 # Image parameters
 IMG_SIZE = 224
 BATCH_SIZE = 16
-EPOCHS = 15
+EPOCHS = 50
 NUM_CLASSES = 4
 
 # Classes

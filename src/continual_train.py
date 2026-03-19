@@ -56,14 +56,17 @@ def _load_validation_data():
 
 def fine_tune_on_new_data(epochs=3):
     device = get_torch_device()
+    use_cuda = torch.cuda.is_available()
+    worker_count = 2 if use_cuda else 0
+
     model_path = os.path.join(MODEL_DIR, MODEL_FILENAME)
     model, model_type = load_checkpoint(model_path, map_location=device)
     model = model.to(device)
 
     train_ds = _load_incremental_data()
     val_ds = _load_validation_data()
-    train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=2, pin_memory=True)
-    val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=2, pin_memory=True)
+    train_loader = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True, num_workers=worker_count, pin_memory=use_cuda)
+    val_loader = DataLoader(val_ds, batch_size=BATCH_SIZE, shuffle=False, num_workers=worker_count, pin_memory=use_cuda)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE * 0.1)

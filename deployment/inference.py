@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import sys
+import csv
 import torch
 from PIL import Image
 from io import BytesIO
@@ -18,7 +19,36 @@ _device = get_torch_device()
 _transform = None
 
 # Cloud model URL for Streamlit/Hugging Face deployment
-DEFAULT_DEPLOY_MODEL_FILENAME = "best_model_resnet.pth"
+def _best_checkpoint_from_results():
+    comparison_path = os.path.join(RESULTS_DIR, "model_comparison.csv")
+    if not os.path.exists(comparison_path):
+        return None
+
+    best_checkpoint = None
+    best_accuracy = float("-inf")
+
+    try:
+        with open(comparison_path, "r", encoding="utf-8") as file:
+            reader = csv.DictReader(file)
+            for row in reader:
+                checkpoint = (row.get("checkpoint") or "").strip()
+                accuracy_raw = (row.get("accuracy") or "").strip()
+                if not checkpoint or not accuracy_raw:
+                    continue
+                try:
+                    accuracy = float(accuracy_raw)
+                except ValueError:
+                    continue
+                if accuracy > best_accuracy:
+                    best_accuracy = accuracy
+                    best_checkpoint = checkpoint
+    except Exception:
+        return None
+
+    return best_checkpoint
+
+
+DEFAULT_DEPLOY_MODEL_FILENAME = _best_checkpoint_from_results() or "best_model_resnet.pth"
 DEPLOY_MODEL_FILENAME = os.getenv("DEPLOY_MODEL_FILENAME", DEFAULT_DEPLOY_MODEL_FILENAME)
 DEFAULT_MODEL_CLOUD_URL = f"https://huggingface.co/abhishekghz/brain-tumor-classifier/resolve/main/{DEPLOY_MODEL_FILENAME}"
 MODEL_CLOUD_URL = os.getenv("MODEL_CLOUD_URL", DEFAULT_MODEL_CLOUD_URL)

@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import csv
 import torch
 import torch.nn as nn
 from src.data_loader import load_data
@@ -19,7 +20,13 @@ def train(model_type=MODEL_TYPE, model_filename=MODEL_FILENAME, artifact_suffix=
         "val_loss": [],
     }
 
-    for _ in range(EPOCHS):
+    suffix = f"_{artifact_suffix}" if artifact_suffix else ""
+    epoch_log_path = os.path.join(RESULTS_DIR, f"epoch_metrics{suffix}.csv")
+    with open(epoch_log_path, "w", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerow(["epoch", "train_loss", "train_accuracy", "val_loss", "val_accuracy"])
+
+    for epoch in range(EPOCHS):
         model.train()
         running_loss = 0.0
         correct = 0
@@ -67,6 +74,23 @@ def train(model_type=MODEL_TYPE, model_filename=MODEL_FILENAME, artifact_suffix=
         history["loss"].append(train_loss)
         history["val_loss"].append(val_loss)
 
+        epoch_num = epoch + 1
+        print(
+            f"[{model_type.upper()}] Epoch {epoch_num}/{EPOCHS} | "
+            f"train_loss={train_loss:.4f}, train_acc={train_acc:.4f}, "
+            f"val_loss={val_loss:.4f}, val_acc={val_acc:.4f}",
+            flush=True,
+        )
+        with open(epoch_log_path, "a", newline="", encoding="utf-8") as file:
+            writer = csv.writer(file)
+            writer.writerow([
+                epoch_num,
+                f"{train_loss:.6f}",
+                f"{train_acc:.6f}",
+                f"{val_loss:.6f}",
+                f"{val_acc:.6f}",
+            ])
+
     save_checkpoint(model, model_type=model_type, path=os.path.join(MODEL_DIR, model_filename))
 
     # Plot accuracy & loss
@@ -84,7 +108,6 @@ def train(model_type=MODEL_TYPE, model_filename=MODEL_FILENAME, artifact_suffix=
     plt.title("Loss")
     plt.legend()
 
-    suffix = f"_{artifact_suffix}" if artifact_suffix else ""
     plt.savefig(os.path.join(RESULTS_DIR, f"accuracy_loss{suffix}.png"))
     plt.close()
 

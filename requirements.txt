@@ -3,6 +3,7 @@ matplotlib
 scikit-learn
 seaborn
 pandas
+tabulate
 tqdm
 transformers
 torch
